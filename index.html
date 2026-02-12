@@ -1,81 +1,74 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>RA Vision AI Dashboard</title>
-  <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
-      color: white;
-      text-align: center;
-    }
-    .container {
-      margin-top: 80px;
-    }
-    input {
-      padding: 12px;
-      width: 300px;
-      border-radius: 8px;
-      border: none;
-      outline: none;
-    }
-    button {
-      padding: 12px 20px;
-      border: none;
-      border-radius: 8px;
-      margin-left: 10px;
-      cursor: pointer;
-      background: #00c6ff;
-      color: black;
-      font-weight: bold;
-    }
-    img {
-      margin-top: 30px;
-      max-width: 80%;
-      border-radius: 10px;
-    }
-  </style>
+    <title>RA Vision AI</title>
+    <style>
+        body {
+            font-family: Arial;
+            background: #0f2027;
+            color: white;
+            text-align: center;
+            padding-top: 100px;
+        }
+        input {
+            padding: 12px;
+            width: 300px;
+            border-radius: 8px;
+            border: none;
+        }
+        button {
+            padding: 12px 20px;
+            border-radius: 8px;
+            border: none;
+            background: #00c6ff;
+            color: white;
+            cursor: pointer;
+        }
+        button:disabled {
+            background: gray;
+            cursor: not-allowed;
+        }
+        img {
+            margin-top: 30px;
+            max-width: 500px;
+            border-radius: 10px;
+        }
+    </style>
 </head>
 <body>
-  <div class="container">
-    <h1>🚀 RA Vision AI</h1>
-    <p>Enter your prompt to generate image</p>
-    
-    <input type="text" id="prompt" placeholder="Type something amazing..." />
-    <button onclick="generateImage()">Generate</button>
 
-    <div id="result"></div>
-  </div>
+<h1>🚀 RA Vision AI</h1>
 
-  <script>
-    async function generateImage() {
-      const prompt = document.getElementById("prompt").value;
-      const resultDiv = document.getElementById("result");
+<input type="text" id="prompt" placeholder="Enter your prompt">
+<button onclick="generateImage()" id="btn">Generate</button>
 
-      resultDiv.innerHTML = "⏳ Generating image...";
+<p id="status"></p>
+<img id="result">
 
-      try {
-        const response = await fetch("/api/generate-image", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({ prompt: prompt })
-        });
+<script>
+function generateImage() {
+    const prompt = document.getElementById("prompt").value;
+    const status = document.getElementById("status");
+    const btn = document.getElementById("btn");
 
-        const data = await response.json();
-
-        if (data.imageUrl) {
-          resultDiv.innerHTML = <img src="${data.imageUrl}" />;
-        } else {
-          resultDiv.innerHTML = "⚠️ No image returned yet.";
-        }
-
-      } catch (error) {
-        resultDiv.innerHTML = "❌ Error connecting to API.";
-      }
+    if (!prompt) {
+        alert("Please enter a prompt");
+        return;
     }
-  </script>
+
+    status.innerHTML = "Generating image...";
+    btn.disabled = true;
+
+    // Demo image (temporary)
+    setTimeout(() => {
+        document.getElementById("result").src =
+        "https://picsum.photos/500?random=" + Math.random();
+
+        status.innerHTML = "Image generated ✅";
+        btn.disabled = false;
+    }, 2000);
+}
+</script>
+
 </body>
 </html>
