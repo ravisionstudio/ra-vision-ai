@@ -1,74 +1,155 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>RA Vision AI</title>
-    <style>
-        body {
-            font-family: Arial;
-            background: #0f2027;
-            color: white;
-            text-align: center;
-            padding-top: 100px;
-        }
-        input {
-            padding: 12px;
-            width: 300px;
-            border-radius: 8px;
-            border: none;
-        }
-        button {
-            padding: 12px 20px;
-            border-radius: 8px;
-            border: none;
-            background: #00c6ff;
-            color: white;
-            cursor: pointer;
-        }
-        button:disabled {
-            background: gray;
-            cursor: not-allowed;
-        }
-        img {
-            margin-top: 30px;
-            max-width: 500px;
-            border-radius: 10px;
-        }
-    </style>
+<meta charset="UTF-8">
+<title>RA Vision AI - Ultimate Dashboard</title>
+<style>
+body { font-family: Arial, sans-serif; margin:0; padding:20px; background:#f5f5f5; }
+h1 { text-align:center; color:#222; }
+.container { max-width: 1200px; margin:auto; background:#fff; padding:20px; border-radius:10px; box-shadow:0 0 15px rgba(0,0,0,0.1);}
+label { display:block; margin-top:15px; font-weight:bold;}
+select, input, textarea, button { width:100%; padding:10px; margin-top:5px; border-radius:5px; border:1px solid #ccc; }
+button { background:#28a745; color:#fff; font-weight:bold; cursor:pointer; }
+button:hover { background:#218838; }
+#status { margin-top:10px; font-weight:bold; }
+#outputContainer img, #outputContainer video, #outputContainer audio { max-width:100%; margin-top:10px; border-radius:5px; }
+.option-group { display:flex; flex-wrap:wrap; gap:10px; }
+.option-group > div { flex:1; min-width:200px; }
+.tooltip { position: relative; display: inline-block; cursor: pointer; }
+.tooltip .tooltiptext { visibility: hidden; width: 180px; background-color: #555; color: #fff; text-align:center; border-radius:6px; padding:5px; position:absolute; z-index:1; bottom:125%; left:50%; margin-left:-90px; opacity:0; transition:opacity 0.3s; }
+.tooltip:hover .tooltiptext { visibility: visible; opacity:1; }
+</style>
 </head>
 <body>
+<h1>RA Vision AI - Ultimate Content Dashboard</h1>
+<div class="container">
 
-<h1>🚀 RA Vision AI</h1>
+<label>Select Action:</label>
+<select id="optionSelect">
+  <option value="text-image">Text → Image</option>
+  <option value="text-video">Text → Video</option>
+  <option value="image-video">Image → Video</option>
+  <option value="text-speech">Text → Speech</option>
+  <option value="voice-clone">Voice Cloning</option>
+</select>
 
-<input type="text" id="prompt" placeholder="Enter your prompt">
-<button onclick="generateImage()" id="btn">Generate</button>
+<label>Enter Prompt or Upload Image/Voice:</label>
+<textarea id="prompt" rows="4" placeholder="Enter your prompt here (for text based generation)"></textarea>
+<input type="file" id="fileInput" accept="image/,audio/">
 
-<p id="status"></p>
-<img id="result">
+<div class="option-group">
+  <div>
+    <label>Size:</label>
+    <select id="sizeSelect">
+      <option value="1024x1024">1024x1024</option>
+      <option value="16:9">16:9 (YouTube)</option>
+      <option value="9:16">9:16 (Shorts/Reels)</option>
+      <option value="Custom">Custom</option>
+    </select>
+    <input type="text" id="customSize" placeholder="Width x Height, e.g., 1920x1080" style="display:none;">
+  </div>
+  <div>
+    <label>Quality:</label>
+    <select id="qualitySelect">
+      <option value="1080p">1080p</option>
+      <option value="2k">2K</option>
+      <option value="4k">4K</option>
+    </select>
+  </div>
+  <div>
+    <label>Voice (Speech / Voice Cloning):</label>
+    <select id="voiceSelect">
+      <option value="Hindi-Female">Hindi Female</option>
+      <option value="Hindi-Male">Hindi Male</option>
+      <option value="English-Female">English Female</option>
+      <option value="English-Male">English Male</option>
+      <option value="Japanese-Female">Japanese Female</option>
+      <option value="German-Male">German Male</option>
+      <option value="French-Female">French Female</option>
+      <option value="Spanish-Male">Spanish Male</option>
+      <!-- Add more languages as needed -->
+    </select>
+  </div>
+</div>
+
+<button id="generateBtn">Generate</button>
+<div id="status"></div>
+<div id="outputContainer"></div>
+<button id="downloadBtn" style="display:none;">Download</button>
 
 <script>
-function generateImage() {
-    const prompt = document.getElementById("prompt").value;
-    const status = document.getElementById("status");
-    const btn = document.getElementById("btn");
+const optionSelect = document.getElementById("optionSelect");
+const fileInput = document.getElementById("fileInput");
+const customSizeInput = document.getElementById("customSize");
+const sizeSelect = document.getElementById("sizeSelect");
 
-    if (!prompt) {
-        alert("Please enter a prompt");
-        return;
+sizeSelect.addEventListener("change", () => {
+  customSizeInput.style.display = sizeSelect.value === "Custom" ? "block" : "none";
+});
+
+document.getElementById("generateBtn").addEventListener("click", async () => {
+  const option = optionSelect.value;
+  const prompt = document.getElementById("prompt").value;
+  const file = fileInput.files[0];
+  const size = sizeSelect.value === "Custom" ? customSizeInput.value : sizeSelect.value;
+  const quality = document.getElementById("qualitySelect").value;
+  const voice = document.getElementById("voiceSelect").value;
+  const status = document.getElementById("status");
+  const output = document.getElementById("outputContainer");
+  const downloadBtn = document.getElementById("downloadBtn");
+
+  if(!prompt && !file){ alert("Enter prompt or upload file"); return; }
+
+  status.innerText = "⏳ Generating... Please wait";
+  downloadBtn.style.display="none";
+  output.innerHTML="";
+
+  let formData = { type: option, prompt, size, quality, voice };
+
+  if(file){
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      formData.image = e.target.result; // for image→video or voice cloning
+      await callAPI(formData);
+    };
+    reader.readAsDataURL(file);
+  } else {
+    await callAPI(formData);
+  }
+
+  async function callAPI(data){
+    try{
+      const res = await fetch("/api/generate-content", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify(data)
+      });
+      const result = await res.json();
+      if(result.url){
+        if(option.includes("image")){
+          output.innerHTML = <img src="${result.url}" />;
+        } else if(option.includes("video")){
+          output.innerHTML = <video src="${result.url}" controls autoplay></video>;
+        } else if(option.includes("speech") || option.includes("voice-clone")){
+          output.innerHTML = <audio src="${result.url}" controls autoplay></audio>;
+        }
+        downloadBtn.style.display="inline";
+        downloadBtn.onclick = () => {
+          const a = document.createElement("a");
+          a.href = result.url;
+          a.download = "RA-Vision-Output";
+          a.click();
+        };
+        status.innerText = "✅ Generated Successfully";
+      } else {
+        status.innerText = "❌ Failed to generate content";
+      }
+    }catch(err){
+      console.error(err);
+      status.innerText = "❌ API Error: "+err.message;
     }
-
-    status.innerHTML = "Generating image...";
-    btn.disabled = true;
-
-    // Demo image (temporary)
-    setTimeout(() => {
-        document.getElementById("result").src =
-        "https://picsum.photos/500?random=" + Math.random();
-
-        status.innerHTML = "Image generated ✅";
-        btn.disabled = false;
-    }, 2000);
-}
+  }
+});
 </script>
-
 </body>
 </html>
