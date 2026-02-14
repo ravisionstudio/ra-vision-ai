@@ -1,44 +1,52 @@
- 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
-    return res.status(405).json({ error: "Only POST method allowed" });
+    return res.status(405).json({ error: "Only POST requests allowed" });
   }
 
-  try 1{
-    const { prompt, size } = req.body;
+  try {
+    const { prompt } = req.body;
 
     if (!prompt) {
       return res.status(400).json({ error: "Prompt is required" });
     }
 
-    const response = await fetch("https://api.openai.com/v1/images/generations", {
+    // ---- MODELSLAB API CALL ----
+    const response = await fetch("https://modelslab.com/api/v6/realtime/text2img", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": Bearer ${process.env.OPENAI_API_KEY}
       },
       body: JSON.stringify({
-        model: "gpt-image-1",
+        key: process.env.MODELSLAB_API_KEY,
         prompt: prompt,
-        size: size || "1024x1024"
-      })
+        model_id: "flux",
+        width: "1024",
+        height: "1024",
+        samples: "1",
+        num_inference_steps: "30",
+        guidance_scale: 7.5,
+        safety_checker: "no",
+      }),
     });
 
     const data = await response.json();
 
-    if (!response.ok) {
-      return res.status(400).json({ error: data });
+    if (data.status === "success") {
+      return res.status(200).json({
+        success: true,
+        image: data.output[0],
+      });
+    } else {
+      return res.status(500).json({
+        success: false,
+        error: data.message || "Image generation failed",
+      });
     }
-
-    return res.status(200).json({
-      success: true,
-      image: data.data[0].url
-    });
-
   } catch (error) {
+    console.error("ERROR:", error);
     return res.status(500).json({
+      success: false,
       error: "Server error",
-      message: error.message
     });
   }
 }
